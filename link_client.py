@@ -42,7 +42,7 @@ log = logging.getLogger("dotpulse")
 OFFICIAL_URL = "https://link.dotpulse.app"
 SCHEME = "DP1-HMAC-SHA256"
 #: This connector, and the wire protocol it speaks with the Link service.
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 PROTOCOL = 1
 _ID = re.compile(r"[0-9a-f]{32}\Z")
 
@@ -151,12 +151,23 @@ def update_link(link_id: str, **changes) -> None:
 
 
 def forget_link(link_id: str) -> bool:
-    """Drop a link's credential from this machine. After this, only a new pairing connects again."""
+    """Erase everything this machine holds about one link: its credential, the phone's key and
+    name, what it was granted, and the record of the pairing that made it. Nothing else is
+    touched: not this Hermes' own key, not other links, and nothing of Hermes itself. After
+    this, only a new pairing connects that phone again."""
     with _Locked():
         rows = links()
         kept = [l for l in rows if l["link_id"] != link_id]
         if len(kept) != len(rows):
             _save_links(kept)
+        claims = os.path.join(state_dir(), "claims")
+        for name in os.listdir(claims):
+            path = os.path.join(claims, name)
+            if (_read(path, None) or {}).get("link_id") == link_id:
+                try:
+                    os.unlink(path)
+                except OSError:
+                    pass
     return len(kept) != len(rows)
 
 
