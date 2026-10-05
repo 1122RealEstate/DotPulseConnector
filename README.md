@@ -4,7 +4,7 @@ The Hermes plugin that connects a Hermes to the DotPulse app. It presents the Pa
 user pastes, keeps the connection's credential on this machine, and holds the outbound connection
 that lets the app reach this Hermes. It opens no port.
 
-Version 0.4.1. Needs Hermes >=0.21.
+Version 0.4.2. Needs Hermes >=0.21.
 
 ## Install
 

@@ -42,7 +42,7 @@ log = logging.getLogger("dotpulse")
 OFFICIAL_URL = "https://link.dotpulse.app"
 SCHEME = "DP1-HMAC-SHA256"
 #: This connector, and the wire protocol it speaks with the Link service.
-VERSION = "0.4.1"
+VERSION = "0.4.2"
 PROTOCOL = 1
 _ID = re.compile(r"[0-9a-f]{32}\Z")
 

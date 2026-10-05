@@ -204,6 +204,51 @@ def _net(event=None, **_):
     return None
 
 
+_agent_checked = 0.0
+
+
+def _keep_agent() -> None:
+    """The link agent is its own process. If it ever dies while Hermes keeps running, whatever
+    Hermes does next for anyone brings it back, so a connected phone does not stay cut off until
+    the next restart. Cheap, at most twice a minute, and it never raises."""
+    global _agent_checked
+    import time
+    now = time.monotonic()
+    if now - _agent_checked < 30:
+        return
+    _agent_checked = now
+    try:
+        import link_client
+        link_client.ensure_agent()
+    except Exception:
+        log.debug("dotpulse: could not check the link agent", exc_info=True)
+
+
+_watching = False
+
+
+def _watch_agent() -> None:
+    """While this Hermes process lives, look in on the link agent twice a minute, messages or no
+    messages. A daemon thread: it asks nothing of Hermes and ends with it."""
+    global _watching
+    if _watching:
+        return
+    _watching = True
+    import threading
+    import time
+
+    def loop():
+        while True:
+            time.sleep(30)
+            try:
+                import link_client
+                link_client.ensure_agent()
+            except Exception:
+                log.debug("dotpulse: could not check the link agent", exc_info=True)
+
+    threading.Thread(target=loop, name="dotpulse-agent-watch", daemon=True).start()
+
+
 def _net_link(event=None, **_):
     """A Pairing ID outside the owner's private Telegram chat.
 
@@ -212,6 +257,7 @@ def _net_link(event=None, **_):
     handed to the model. In a private chat on another platform it goes on to the agent, which
     has the ``dotpulse_pair`` tool; Hermes' own allow-list still applies after this hook.
     """
+    _keep_agent()
     text = getattr(event, "text", None) or ""
     if not _DPP1.search(text):
         return None
@@ -226,6 +272,7 @@ def _net_link(event=None, **_):
 def _command(raw_args: str = "") -> str:
     """`/dotpulse` — pair, list or disconnect. Reached through Hermes' own command path, so Hermes
     has already checked who is asking."""
+    _keep_agent()
     import link_flow
     words = (raw_args or "").split()
     if _DPP1.search(raw_args or ""):
@@ -277,6 +324,7 @@ def _tool_pair(args: dict, **_) -> str:
 
 
 def _tool_status(args: dict, **_) -> str:
+    _keep_agent()
     import json
     import link_flow
     import link_client
@@ -327,6 +375,7 @@ def _register_link(ctx) -> None:
     # Phones already linked must be reachable again after a restart, whichever Hermes process came up first.
     import link_client
     link_client.ensure_agent()
+    _watch_agent()
 
 
 def register(ctx) -> None:
