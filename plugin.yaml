@@ -1,0 +1,9 @@
+name: dotpulse
+version: 0.4.0
+description: Connect the DotPulse phone app to this Hermes. A Pairing ID pasted once (Telegram, chat or /dotpulse), confirmed on the phone and here.
+author: DotPulse
+kind: standalone
+requires_hermes: ">=0.21"
+python_dependencies:
+  - aiohttp
+  - cryptography
